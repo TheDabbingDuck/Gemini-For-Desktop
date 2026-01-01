@@ -278,6 +278,10 @@ export function toggleHUDWindow(): void {
         console.log('[HUD] Showing window');
         showHUDWindow();
     }
+
+    // Update tray menu to reflect new visibility state
+    // Delayed import to avoid circular dependency
+    import('../tray.js').then(({ updateTrayMenu }) => updateTrayMenu()).catch(() => { });
 }
 
 /**

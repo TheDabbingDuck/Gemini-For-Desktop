@@ -11,6 +11,7 @@
 
 import { BrowserWindow, session, shell, ipcMain } from 'electron';
 import { setupAuthInterception } from '../auth.js';
+import { getHUDWindow } from './hud.js';
 
 // URLs
 const GEMINI_URL = 'https://gemini.google.com';
@@ -95,10 +96,19 @@ function createSignInWindow(url: string): BrowserWindow {
             if (isSignedIn || true) { // Copy cookies regardless
                 await copyAuthCookies();
                 win.close();
+
+                // Reload Standard Window
                 if (standardWindow && !standardWindow.isDestroyed()) {
                     standardWindow.loadURL(GEMINI_URL);
                     standardWindow.show();
                     standardWindow.focus();
+                }
+
+                // Also reload HUD so it gets the auth cookies
+                const hudWindow = getHUDWindow();
+                if (hudWindow && !hudWindow.isDestroyed()) {
+                    console.log('[Auth] Reloading HUD with new auth cookies');
+                    hudWindow.loadURL(GEMINI_URL);
                 }
             }
         }
@@ -128,6 +138,7 @@ export function createStandardWindow(bounds?: typeof DEFAULT_BOUNDS): BrowserWin
         minHeight: 400,
         show: false,
         frame: true,
+        skipTaskbar: false, // Ensure window appears in taskbar
         webPreferences: {
             partition: SESSION_PARTITION,
             contextIsolation: true,

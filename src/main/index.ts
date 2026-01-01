@@ -4,36 +4,15 @@
  * Initializes the application and coordinates all modules.
  */
 
-import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { createStandardWindow, getStandardWindow } from './windows/standard.js';
-import { createHUDWindow, toggleHUDWindow, hideHUDWindow, getHUDWindow } from './windows/hud.js';
+import { createHUDWindow, hideHUDWindow } from './windows/hud.js';
+import { createTray } from './tray.js';
+import { registerHotkeys, unregisterHotkeys } from './hotkey.js';
 
 // Window references
 let standardWindow: BrowserWindow | null = null;
 let hudWindow: BrowserWindow | null = null;
-
-// Default hotkey
-const DEFAULT_HOTKEY = process.platform === 'darwin'
-    ? 'CommandOrControl+Shift+G'
-    : 'Ctrl+Shift+G';
-
-/**
- * Register global hotkey
- */
-function registerHotkey(): boolean {
-    const registered = globalShortcut.register(DEFAULT_HOTKEY, () => {
-        console.log('[Hotkey] Toggle HUD triggered');
-        toggleHUDWindow();
-    });
-
-    if (registered) {
-        console.log(`[Hotkey] Registered: ${DEFAULT_HOTKEY}`);
-    } else {
-        console.log(`[Hotkey] Failed to register: ${DEFAULT_HOTKEY}`);
-    }
-
-    return registered;
-}
 
 /**
  * Initialize the application
@@ -47,8 +26,11 @@ async function init(): Promise<void> {
     // Create the HUD window (hidden)
     hudWindow = createHUDWindow();
 
-    // Register global hotkey for HUD
-    registerHotkey();
+    // Create system tray
+    createTray();
+
+    // Register global hotkeys
+    registerHotkeys();
 
     console.log('[App] Initialization complete');
 }
@@ -58,7 +40,7 @@ app.whenReady().then(init);
 
 app.on('will-quit', () => {
     // Unregister all shortcuts
-    globalShortcut.unregisterAll();
+    unregisterHotkeys();
 });
 
 app.on('window-all-closed', () => {
