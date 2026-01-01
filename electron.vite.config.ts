@@ -17,18 +17,23 @@ export default defineConfig({
                 external: ['electron'],
                 input: {
                     index: resolve(__dirname, 'src/preload/index.ts'),
-                    hud: resolve(__dirname, 'src/preload/hud.ts')
+                    hud: resolve(__dirname, 'src/preload/hud.ts'),
+                    settings: resolve(__dirname, 'src/preload/settings.ts'),
+                    onboarding: resolve(__dirname, 'src/preload/onboarding.ts')
                 }
             }
         }
     },
-    // Renderer is disabled - we load external URLs (gemini.google.com)
     renderer: {
         root: resolve(__dirname, 'src/renderer'),
         build: {
             outDir: resolve(__dirname, 'dist/renderer'),
             rollupOptions: {
-                input: resolve(__dirname, 'src/renderer/index.html')
+                input: {
+                    main: resolve(__dirname, 'src/renderer/index.html'),
+                    settings: resolve(__dirname, 'src/renderer/settings/index.html'),
+                    onboarding: resolve(__dirname, 'src/renderer/onboarding/index.html')
+                }
             }
         }
     }

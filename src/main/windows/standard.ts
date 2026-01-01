@@ -9,9 +9,15 @@
  * - Remembers position and size
  */
 
-import { BrowserWindow, session, shell, ipcMain } from 'electron';
+import { BrowserWindow, session, shell, ipcMain, app } from 'electron';
 import { setupAuthInterception } from '../auth.js';
 import { getHUDWindow } from './hud.js';
+import { getSetting, setWindowBounds, getWindowBounds } from '../store.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // URLs
 const GEMINI_URL = 'https://gemini.google.com';
@@ -122,23 +128,25 @@ function createSignInWindow(url: string): BrowserWindow {
     return win;
 }
 
-/**
- * Create the Standard Window
- */
-export function createStandardWindow(bounds?: typeof DEFAULT_BOUNDS): BrowserWindow {
+export function createStandardWindow(): BrowserWindow {
     const ses = session.fromPartition(SESSION_PARTITION);
     setupAuthInterception(ses);
 
+    // Get saved bounds or use defaults
+    const savedBounds = getWindowBounds('standard');
+
     const win = new BrowserWindow({
-        width: bounds?.width || DEFAULT_BOUNDS.width,
-        height: bounds?.height || DEFAULT_BOUNDS.height,
-        x: bounds?.x,
-        y: bounds?.y,
+        width: savedBounds.width,
+        height: savedBounds.height,
+        x: savedBounds.x,
+        y: savedBounds.y,
         minWidth: 600,
         minHeight: 400,
         show: false,
         frame: true,
+        autoHideMenuBar: true, // Hide menu bar, Alt key to show
         skipTaskbar: false, // Ensure window appears in taskbar
+        icon: path.join(__dirname, process.platform === 'win32' ? '../../resources/icon.ico' : '../../resources/icon.icns'), // Cross-platform icon
         webPreferences: {
             partition: SESSION_PARTITION,
             contextIsolation: true,
@@ -180,13 +188,55 @@ export function createStandardWindow(bounds?: typeof DEFAULT_BOUNDS): BrowserWin
     win.loadURL(GEMINI_URL);
 
     win.once('ready-to-show', () => {
-        win.show();
+        // Check if launched as hidden (startup item)
+        const isHiddenLaunch = process.argv.includes('--hidden') || app.getLoginItemSettings().wasOpenedAsHidden;
+
+        if (!isHiddenLaunch) {
+            win.show();
+        } else {
+            console.log('[Standard] Launched hidden (startup)');
+        }
     });
 
-    // Handle close - hide instead of quit
+    // Handle close - hide to tray or quit based on settings
+    // Only apply when user clicks X, not when app.quit() is called
+    let isQuitting = false;
+
+    app.on('before-quit', () => {
+        isQuitting = true;
+    });
+
     win.on('close', (event) => {
-        // For now, just close normally
-        // Later: hide to tray based on settings
+        if (isQuitting) {
+            // App is quitting (from tray quit, Cmd+Q, etc.) - allow close
+            return;
+        }
+
+        const closeBehavior = getSetting('closeBehavior');
+        if (closeBehavior === 'tray') {
+            event.preventDefault();
+            win.hide();
+            console.log('[Standard] Hidden to tray');
+        } else if (closeBehavior === 'quit') {
+            // Quit the entire app when user closes window
+            console.log('[Standard] Quitting app');
+            app.quit();
+        }
+    });
+
+    // Save window bounds when resized or moved
+    win.on('resize', () => {
+        if (!win.isMinimized()) {
+            const bounds = win.getBounds();
+            setWindowBounds('standard', bounds);
+        }
+    });
+
+    win.on('move', () => {
+        if (!win.isMinimized()) {
+            const bounds = win.getBounds();
+            setWindowBounds('standard', bounds);
+        }
     });
 
     standardWindow = win;

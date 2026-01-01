@@ -7,8 +7,11 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { createStandardWindow, getStandardWindow } from './windows/standard.js';
 import { createHUDWindow, hideHUDWindow } from './windows/hud.js';
+import { registerSettingsIPC, applyLaunchOnStartup } from './windows/settings.js';
+import { registerOnboardingIPC, shouldShowOnboarding, showOnboardingWindow } from './windows/onboarding.js';
 import { createTray } from './tray.js';
 import { registerHotkeys, unregisterHotkeys } from './hotkey.js';
+import { getSetting } from './store.js';
 
 // Window references
 let standardWindow: BrowserWindow | null = null;
@@ -19,6 +22,10 @@ let hudWindow: BrowserWindow | null = null;
  */
 async function init(): Promise<void> {
     console.log('[App] Initializing Gemini Desktop...');
+
+    // Register IPC handlers first
+    registerSettingsIPC();
+    registerOnboardingIPC();
 
     // Create the standard window
     standardWindow = createStandardWindow();
@@ -31,6 +38,17 @@ async function init(): Promise<void> {
 
     // Register global hotkeys
     registerHotkeys();
+
+    // Apply launch on startup setting (register with OS)
+    applyLaunchOnStartup(getSetting('launchOnStartup'));
+
+    // Show onboarding if user hasn't seen it (or dismissed permanently)
+    if (shouldShowOnboarding()) {
+        // Delay slightly to let main window load
+        setTimeout(() => {
+            showOnboardingWindow();
+        }, 1000);
+    }
 
     console.log('[App] Initialization complete');
 }

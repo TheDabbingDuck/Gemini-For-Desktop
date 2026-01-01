@@ -6,9 +6,10 @@
  * - Right-click: Context menu with all options
  */
 
-import { Tray, Menu, app, nativeImage, dialog, MenuItemConstructorOptions } from 'electron';
+import { Tray, Menu, app, nativeImage, MenuItemConstructorOptions } from 'electron';
 import { showStandardWindow, getStandardWindow } from './windows/standard.js';
 import { toggleHUDWindow, getHUDWindow } from './windows/hud.js';
+import { getSetting } from './store.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -34,6 +35,10 @@ function createPlaceholderIcon(): Electron.NativeImage {
         const icon = nativeImage.createFromPath(iconPath);
         if (!icon.isEmpty()) {
             console.log('[Tray] Loaded icon from resources');
+            // On macOS, treat as template image (handles dark/light mode automatically)
+            if (process.platform === 'darwin') {
+                icon.setTemplateImage(true);
+            }
             return icon;
         }
     } catch {
@@ -72,7 +77,7 @@ function buildContextMenu(): Menu {
             label: 'Toggle HUD',
             type: 'checkbox',
             checked: isHUDVisible,
-            accelerator: process.platform === 'darwin' ? 'Cmd+Shift+G' : 'Ctrl+Shift+G',
+            accelerator: getSetting('hotkey') || (process.platform === 'darwin' ? 'CommandOrControl+Shift+G' : 'Ctrl+Shift+G'),
             click: () => {
                 console.log('[Tray] Toggle HUD clicked');
                 toggleHUDWindow();
@@ -85,12 +90,9 @@ function buildContextMenu(): Menu {
             label: 'Settings',
             click: () => {
                 console.log('[Tray] Settings clicked');
-                dialog.showMessageBox({
-                    type: 'info',
-                    title: 'Settings',
-                    message: 'Settings coming in Phase 4!',
-                    detail: 'The settings panel will allow you to configure:\n• Launch on startup\n• Close behavior (tray vs quit)\n• Hotkey customization',
-                    buttons: ['OK']
+                // Delayed import to avoid circular dependency
+                import('./windows/settings.js').then(({ showSettingsWindow }) => {
+                    showSettingsWindow();
                 });
             }
         },

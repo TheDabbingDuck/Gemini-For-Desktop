@@ -12,6 +12,7 @@
 
 import { BrowserWindow, session, shell, ipcMain } from 'electron';
 import { setupAuthInterception } from '../auth.js';
+import { setWindowBounds, getWindowBounds } from '../store.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -105,31 +106,50 @@ function createSignInWindow(url: string): BrowserWindow {
 /**
  * Create the HUD Window
  */
-export function createHUDWindow(bounds?: typeof DEFAULT_HUD_BOUNDS): BrowserWindow {
+export function createHUDWindow(): BrowserWindow {
     const ses = session.fromPartition(SESSION_PARTITION);
     setupAuthInterception(ses);
 
+    // Get saved bounds or use defaults
+    const savedBounds = getWindowBounds('hud');
+
     const win = new BrowserWindow({
-        width: bounds?.width || DEFAULT_HUD_BOUNDS.width,
-        height: bounds?.height || DEFAULT_HUD_BOUNDS.height,
-        x: bounds?.x,
-        y: bounds?.y,
+        width: savedBounds.width,
+        height: savedBounds.height,
+        x: savedBounds.x,
+        y: savedBounds.y,
         minWidth: 300,
         minHeight: 400,
         show: false,
 
         // HUD-specific settings
         frame: false,
-        transparent: true,
+        transparent: false,
         alwaysOnTop: true,
         skipTaskbar: true,
         resizable: true,
+        icon: path.join(__dirname, process.platform === 'win32' ? '../../resources/icon.ico' : '../../resources/icon.icns'), // Cross-platform icon
 
         webPreferences: {
             partition: SESSION_PARTITION,
             contextIsolation: true,
             nodeIntegration: false
             // NOTE: No preload - doesn't work on external URLs with sandbox
+        }
+    });
+
+    // Save window bounds when resized or moved
+    win.on('resize', () => {
+        if (!win.isMinimized()) {
+            const bounds = win.getBounds();
+            setWindowBounds('hud', bounds);
+        }
+    });
+
+    win.on('move', () => {
+        if (!win.isMinimized()) {
+            const bounds = win.getBounds();
+            setWindowBounds('hud', bounds);
         }
     });
 
@@ -204,9 +224,14 @@ export function createHUDWindow(bounds?: typeof DEFAULT_HUD_BOUNDS): BrowserWind
           cursor: grab !important;
         }
         
-        /* Rounded corners */
+        /* Rounded corners container */
+        /* Raw window styling - no border */
         html, body {
-          border-radius: 12px !important;
+          background: transparent !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
           overflow: hidden !important;
         }
         

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+    <title>Settings - Gemini Desktop</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+    <div class="settings-container">
+        <!-- Title bar with drag area -->
+        <div class="title-bar">
+            <span class="title">Settings</span>
+            <button class="close-btn" id="closeBtn">&times;</button>
+        </div>
+
+        <!-- Settings content -->
+        <div class="content">
+            <!-- Launch on Startup -->
+            <div class="setting-group">
+                <label class="setting-label">
+                    <input type="checkbox" id="launchOnStartup">
+                    <span class="checkmark"></span>
+                    Launch on startup
+                </label>
+                <p class="setting-description">Start Gemini Desktop when you log in to your computer</p>
+            </div>
+
+            <!-- Close Behavior -->
+            <div class="setting-group">
+                <h3 class="setting-title">When I close the window</h3>
+                <label class="setting-label radio">
+                    <input type="radio" name="closeBehavior" value="tray" id="closeTray">
+                    <span class="radio-mark"></span>
+                    Hide to system tray
+                </label>
+                <label class="setting-label radio">
+                    <input type="radio" name="closeBehavior" value="quit" id="closeQuit">
+                    <span class="radio-mark"></span>
+                    Quit application
+                </label>
+            </div>
+
+            <!-- Global Hotkey -->
+            <div class="setting-group">
+                <h3 class="setting-title">Quick Chat Hotkey</h3>
+                <div class="hotkey-display">
+                    <span class="hotkey-value" id="hotkeyDisplay">Ctrl+Shift+G</span>
+                    <button class="btn btn-small" id="recordHotkeyBtn">Change</button>
+                </div>
+                <div class="hotkey-recording" id="hotkeyRecording" style="display: none;">
+                    <span class="recording-prompt">Press your new hotkey combination...</span>
+                    <button class="btn btn-small btn-cancel" id="cancelRecordBtn">Cancel</button>
+                </div>
+                <p class="setting-description">Press this key combination anywhere to show/hide the floating chat window</p>
+                <p class="setting-description">(This window can be resized and moved, and will always stay on top)</p>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+            <button class="btn btn-secondary" id="resetBtn">Reset to Defaults</button>
+            <button class="btn btn-primary" id="saveBtn">Save & Close</button>
+        </div>
+    </div>
+
+    <script type="module" src="./script.ts"></script>
+</body>
+
+</html>
