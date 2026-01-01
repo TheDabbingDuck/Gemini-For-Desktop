@@ -4,8 +4,5 @@ release/
 *.log
 .DS_Store
 Thumbs.db
-docs/dependency-analysis.md
-docs/implementation-plan.md
-docs/project-requirements.md
-docs/sanity-check.md
+docs/*
 temp/*
