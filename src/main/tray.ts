@@ -46,7 +46,6 @@ function createPlaceholderIcon(): Electron.NativeImage {
     }
 
     // Create a simple placeholder - a small blue/purple gradient square
-    // Base64 encoded 16x16 PNG
     const placeholderBase64 = 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWElEQVR4AWMYBaNgGABGIJ4PxP+h+D8Uz4diBwZSABMQ/wPi/1D8D4pJNgCI/4HxPyj+B8UkuwCI/0HxPyj+B8UMpAAmBgqAkQhNDCPSAEYiNDGMqADAAAD7BBX7a98jvQAAAABJRU5ErkJggg==';
 
     const icon = nativeImage.createFromDataURL(`data:image/png;base64,${placeholderBase64}`);

@@ -4,7 +4,7 @@
   "description": "Desktop application for Google Gemini with floating HUD and system tray integration",
   "type": "module",
   "main": "dist/main/index.js",
-  "author": "",
+  "author": "Gemini Desktop User",
   "license": "MIT",
   "engines": {
     "node": ">=22.12.0"
@@ -18,7 +18,8 @@
     "package:mac-intel": "npm run build && electron-builder --mac --x64"
   },
   "dependencies": {
-    "electron-store": "^11.0.2"
+    "electron-store": "^11.0.2",
+    "electron-updater": "^6.6.2"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

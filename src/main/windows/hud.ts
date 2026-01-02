@@ -10,9 +10,11 @@
  * - Skips taskbar
  */
 
-import { BrowserWindow, session, shell, ipcMain } from 'electron';
-import { setupAuthInterception } from '../auth.js';
+import { BrowserWindow, session, shell, ipcMain, screen } from 'electron';
+import { setupAuthInterception, setupAuthErrorDetection, copyAuthCookies } from '../auth.js';
 import { setWindowBounds, getWindowBounds } from '../store.js';
+import { showStandardWindow } from './standard.js';
+import { createSignInWindow } from './auth-window.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -21,7 +23,6 @@ const GEMINI_URL = 'https://gemini.google.com';
 
 // Session partitions
 const SESSION_PARTITION = 'persist:gemini';
-const SIGNIN_PARTITION = 'persist:gemini-auth';
 
 // Get directory name in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -40,78 +41,32 @@ const DEFAULT_HUD_BOUNDS = {
 };
 
 /**
- * Copy cookies from sign-in session to main session
- */
-async function copyAuthCookies(): Promise<void> {
-    const signInSession = session.fromPartition(SIGNIN_PARTITION);
-    const mainSession = session.fromPartition(SESSION_PARTITION);
-
-    const cookies = await signInSession.cookies.get({ domain: '.google.com' });
-    for (const cookie of cookies) {
-        try {
-            await mainSession.cookies.set({
-                url: `https://${cookie.domain?.replace(/^\./, '') || 'google.com'}${cookie.path || '/'}`,
-                name: cookie.name,
-                value: cookie.value,
-                domain: cookie.domain,
-                path: cookie.path,
-                secure: cookie.secure,
-                httpOnly: cookie.httpOnly,
-                expirationDate: cookie.expirationDate,
-                sameSite: cookie.sameSite as 'unspecified' | 'no_restriction' | 'lax' | 'strict'
-            });
-        } catch (err) {
-            // Ignore
-        }
-    }
-}
-
-/**
- * Create sign-in window for HUD
- */
-function createSignInWindow(url: string): BrowserWindow {
-    const win = new BrowserWindow({
-        width: 500,
-        height: 700,
-        title: 'Sign in to Google',
-        frame: true,
-        webPreferences: {
-            partition: SIGNIN_PARTITION,
-            contextIsolation: true,
-            nodeIntegration: false,
-            sandbox: true
-        }
-    });
-
-    win.webContents.on('did-navigate', async (_e, navUrl) => {
-        if (navUrl.includes('gemini.google.com') && !navUrl.includes('accounts.google.com')) {
-            await copyAuthCookies();
-            win.close();
-            if (hudWindow && !hudWindow.isDestroyed()) {
-                hudWindow.loadURL(GEMINI_URL);
-                hudWindow.show();
-                hudWindow.focus();
-            }
-        }
-    });
-
-    win.on('closed', () => {
-        signInWindow = null;
-    });
-
-    win.loadURL(url);
-    return win;
-}
-
-/**
  * Create the HUD Window
  */
 export function createHUDWindow(): BrowserWindow {
     const ses = session.fromPartition(SESSION_PARTITION);
     setupAuthInterception(ses);
 
+    // Watch for auth errors
+    setupAuthErrorDetection(ses, () => {
+        // If HUD is visible when auth fails, hide it and open standard window
+        if (hudWindow && !hudWindow.isDestroyed() && hudWindow.isVisible()) {
+            console.log('[HUD] Auth error detected. Switching to Standard Window.');
+            hudWindow.hide();
+
+            // Open standard window to prompt re-login
+            showStandardWindow();
+        }
+    });
+
     // Get saved bounds or use defaults
     const savedBounds = getWindowBounds('hud');
+
+    // Calculate max dimensions (80% of primary display work area)
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+    const maxWidth = Math.round(screenWidth * 0.8);
+    const maxHeight = Math.round(screenHeight * 0.8);
 
     const win = new BrowserWindow({
         width: savedBounds.width,
@@ -128,6 +83,10 @@ export function createHUDWindow(): BrowserWindow {
         alwaysOnTop: true,
         skipTaskbar: true,
         resizable: true,
+        maximizable: false,      // Prevent "snapping" to full screen
+        fullscreenable: false,   // Prevent OS fullscreen
+        maxWidth: maxWidth,      // 80% of screen width
+        maxHeight: maxHeight,    // 80% of screen height
         icon: path.join(__dirname, process.platform === 'win32' ? '../../resources/icon.ico' : '../../resources/icon.icns'), // Cross-platform icon
 
         webPreferences: {
@@ -156,31 +115,50 @@ export function createHUDWindow(): BrowserWindow {
     // Intercept Google sign-in
     win.webContents.on('will-navigate', (event, url) => {
         if (url.includes('accounts.google.com')) {
+            console.log('[HUD] Redirected to sign-in. Switching to Standard/Auth flow.');
             event.preventDefault();
-            if (!signInWindow || signInWindow.isDestroyed()) {
-                signInWindow = createSignInWindow(url);
-            } else {
-                signInWindow.loadURL(url);
-            }
-            signInWindow.show();
-            signInWindow.focus();
+            win.hide();
+            handleSignIn(url);
         }
     });
 
     win.webContents.setWindowOpenHandler(({ url }) => {
         if (url.includes('accounts.google.com')) {
-            if (!signInWindow || signInWindow.isDestroyed()) {
-                signInWindow = createSignInWindow(url);
-            } else {
-                signInWindow.loadURL(url);
-            }
-            signInWindow.show();
-            signInWindow.focus();
+            handleSignIn(url);
             return { action: 'deny' };
         }
         shell.openExternal(url);
         return { action: 'deny' };
     });
+
+    // Helper to handle sign-in flow
+    function handleSignIn(url: string) {
+        if (signInWindow && !signInWindow.isDestroyed()) {
+            signInWindow.loadURL(url);
+            signInWindow.show();
+            signInWindow.focus();
+            return;
+        }
+
+        signInWindow = createSignInWindow(url);
+
+        // Handle successful login
+        signInWindow.webContents.on('did-navigate', async (_e, navUrl) => {
+            if (navUrl.includes('gemini.google.com') && !navUrl.includes('accounts.google.com')) {
+                await copyAuthCookies();
+                signInWindow?.close();
+                if (hudWindow && !hudWindow.isDestroyed()) {
+                    hudWindow.loadURL(GEMINI_URL);
+                    hudWindow.show();
+                    hudWindow.focus();
+                }
+            }
+        });
+
+        signInWindow.on('closed', () => {
+            signInWindow = null;
+        });
+    }
 
     // Inject CSS and JavaScript for HUD functionality
     win.webContents.on('did-finish-load', () => {
@@ -200,7 +178,7 @@ export function createHUDWindow(): BrowserWindow {
           height: 18px !important;
           -webkit-app-region: drag;
           z-index: 2147483646 !important;
-          background: rgba(180, 180, 180, 0.15) !important;
+          background: rgba(180, 180, 180, 0.3) !important;
           border-radius: 6px !important;
           pointer-events: auto !important;
           cursor: grab !important;

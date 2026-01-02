@@ -2,6 +2,10 @@ appId: com.gemini.desktop
 productName: Gemini Desktop
 directories:
   output: release
+publish:
+  provider: github
+  owner: TheDabbingDuck 
+  repo: Gemini-For-Desktop
 files:
   - dist/**/*
   - resources/**/*
@@ -13,9 +17,12 @@ win:
 
 mac:
   target:
-    - dmg:
-        artifactName: "${productName}-${version}-${arch}.${ext}"
+    - target: dmg
+      arch:
+        - x64
+        - arm64
   icon: resources/icon.icns
+  artifactName: "${productName}-${version}-${arch}.${ext}"
   category: public.app-category.productivity
 
 nsis:

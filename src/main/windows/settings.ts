@@ -130,15 +130,34 @@ export function registerSettingsIPC(): void {
     ipcMain.handle('settings:reset', async () => {
         // Import hotkey module dynamically to avoid circular dependency
         const { updateHotkey, getDefaultHotkey } = await import('../hotkey.js');
+        const { defaults } = await import('../store.js');
+        const { getStandardWindow } = await import('./standard.js');
+        const { getHUDWindow } = await import('./hud.js');
 
         resetSettings();
-        applyLaunchOnStartup(false);
+
+        // Reset startup to DEFAULT value (true), regardless of current state
+        applyLaunchOnStartup(defaults.launchOnStartup);
+
         updateHotkey(getDefaultHotkey());
+
+        // Reset window positions running in memory
+        const stdWin = getStandardWindow();
+        if (stdWin && !stdWin.isDestroyed()) {
+            stdWin.setBounds(defaults.windowBounds.standard);
+            console.log('[Settings] Reset standard window bounds');
+        }
+
+        const hudWin = getHUDWindow();
+        if (hudWin && !hudWin.isDestroyed()) {
+            hudWin.setBounds(defaults.windowBounds.hud);
+            console.log('[Settings] Reset HUD window bounds');
+        }
 
         console.log('[Settings] Reset to defaults');
         return {
-            launchOnStartup: false,
-            closeBehavior: 'tray',
+            launchOnStartup: defaults.launchOnStartup,
+            closeBehavior: defaults.closeBehavior,
             hotkey: getDefaultHotkey()
         };
     });

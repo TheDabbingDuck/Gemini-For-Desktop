@@ -1,11 +1,11 @@
 /**
- * Gemini Desktop - Main Process Entry Point
- * 
- * Initializes the application and coordinates all modules.
+ * Gemini Desktop
+ * Main Process Entry Point
  */
 
 import { app, BrowserWindow, ipcMain } from 'electron';
-import { createStandardWindow, getStandardWindow } from './windows/standard.js';
+import { autoUpdater } from 'electron-updater';
+import { createStandardWindow, getStandardWindow, showStandardWindow } from './windows/standard.js';
 import { createHUDWindow, hideHUDWindow } from './windows/hud.js';
 import { registerSettingsIPC, applyLaunchOnStartup } from './windows/settings.js';
 import { registerOnboardingIPC, shouldShowOnboarding, showOnboardingWindow } from './windows/onboarding.js';
@@ -22,6 +22,11 @@ let hudWindow: BrowserWindow | null = null;
  */
 async function init(): Promise<void> {
     console.log('[App] Initializing Gemini Desktop...');
+
+    // Check for updates (only in packaged app)
+    if (app.isPackaged) {
+        autoUpdater.checkForUpdatesAndNotify();
+    }
 
     // Register IPC handlers first
     registerSettingsIPC();
@@ -50,16 +55,21 @@ async function init(): Promise<void> {
         }, 1000);
     }
 
+    // Handle cleanup on quit
+    app.on('will-quit', () => {
+        // Unregister all shortcuts
+        unregisterHotkeys();
+    });
+
     console.log('[App] Initialization complete');
 }
 
 // Handle app lifecycle
-app.whenReady().then(init);
+if (process.platform === 'win32') {
+    app.setAppUserModelId('com.gemini.desktop');
+}
 
-app.on('will-quit', () => {
-    // Unregister all shortcuts
-    unregisterHotkeys();
-});
+app.whenReady().then(init);
 
 app.on('window-all-closed', () => {
     // Don't quit - we want to stay in tray
@@ -69,12 +79,7 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
     // On macOS, recreate window when dock icon is clicked
-    if (!getStandardWindow() || getStandardWindow()?.isDestroyed()) {
-        standardWindow = createStandardWindow();
-    } else {
-        getStandardWindow()?.show();
-        getStandardWindow()?.focus();
-    }
+    showStandardWindow();
 });
 
 // Prevent multiple instances
@@ -83,12 +88,11 @@ if (!gotTheLock) {
     app.quit();
 } else {
     app.on('second-instance', () => {
-        const win = getStandardWindow();
-        if (win) {
-            if (win.isMinimized()) win.restore();
-            win.show();
-            win.focus();
+        // Someone tried to run a second instance, we should focus our window.
+        if (getStandardWindow()?.isMinimized()) {
+            getStandardWindow()?.restore();
         }
+        showStandardWindow();
     });
 }
 

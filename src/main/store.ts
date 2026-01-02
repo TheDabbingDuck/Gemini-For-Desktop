@@ -7,6 +7,7 @@
  */
 
 import Store from 'electron-store';
+import { screen } from 'electron';
 
 /**
  * Settings interface
@@ -25,7 +26,7 @@ export interface Settings {
 /**
  * Default settings
  */
-const defaults: Settings = {
+export const defaults: Settings = {
     launchOnStartup: true,
     closeBehavior: 'tray',
     hasSeenOnboarding: false,  // Shows onboarding until "Don't show again"
@@ -93,8 +94,49 @@ export function setWindowBounds(
 }
 
 /**
- * Get window bounds for a specific window
+ * Ensure bounds are visible on some display
+ * If not, return defaults
+ */
+export function ensureVisibleBounds(
+    bounds: { x?: number; y?: number; width: number; height: number },
+    defaults: { width: number; height: number }
+): { x?: number; y?: number; width: number; height: number } {
+    // If no position saved, return defaults (let OS center it)
+    if (bounds.x === undefined || bounds.y === undefined) {
+        return { ...defaults, x: undefined, y: undefined };
+    }
+
+    // Check if the window is reachable on any display
+    const displays = screen.getAllDisplays();
+    const isVisible = displays.some(display => {
+        const db = display.bounds;
+        // Simple check: is the top-left corner within this display?
+        // Or at least some significant portion?
+        // Let's check if the center of the window is within the display
+        const centerX = bounds.x! + (bounds.width / 2);
+        const centerY = bounds.y! + (bounds.height / 2);
+
+        return (
+            centerX >= db.x &&
+            centerX < (db.x + db.width) &&
+            centerY >= db.y &&
+            centerY < (db.y + db.height)
+        );
+    });
+
+    if (isVisible) {
+        return bounds;
+    } else {
+        console.log('[Store] Window off-screen, resetting to defaults');
+        return { ...defaults, x: undefined, y: undefined };
+    }
+}
+
+/**
+ * Get window bounds for a specific window with safety check
  */
 export function getWindowBounds(windowType: 'standard' | 'hud'): { x?: number; y?: number; width: number; height: number } {
-    return store.get('windowBounds')[windowType];
+    const saved = store.get('windowBounds')[windowType];
+    const defaultBounds = defaults.windowBounds[windowType];
+    return ensureVisibleBounds(saved, defaultBounds);
 }

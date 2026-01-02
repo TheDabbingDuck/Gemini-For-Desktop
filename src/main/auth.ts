@@ -8,7 +8,7 @@
  * if the headers don't match a real Chrome browser closely enough.
  */
 
-import { Session } from 'electron';
+import { Session, session } from 'electron';
 
 // Chrome 130 User-Agent (matches Electron 39's Chromium version)
 const CHROME_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
@@ -61,4 +61,36 @@ export function setupAuthErrorDetection(ses: Session, onAuthError: () => void): 
             }
         }
     );
+}
+
+/**
+ * Copy cookies from sign-in session to main session
+ */
+export async function copyAuthCookies(): Promise<void> {
+    const SIGNIN_PARTITION = 'persist:gemini-auth';
+    const SESSION_PARTITION = 'persist:gemini';
+
+    const signInSession = session.fromPartition(SIGNIN_PARTITION);
+    const mainSession = session.fromPartition(SESSION_PARTITION);
+
+    const cookies = await signInSession.cookies.get({ domain: '.google.com' });
+    console.log(`[Auth] Copying ${cookies.length} cookies from sign-in partition`);
+
+    for (const cookie of cookies) {
+        try {
+            await mainSession.cookies.set({
+                url: `https://${cookie.domain?.replace(/^\./, '') || 'google.com'}${cookie.path || '/'}`,
+                name: cookie.name,
+                value: cookie.value,
+                domain: cookie.domain,
+                path: cookie.path,
+                secure: cookie.secure,
+                httpOnly: cookie.httpOnly,
+                expirationDate: cookie.expirationDate,
+                sameSite: cookie.sameSite as 'unspecified' | 'no_restriction' | 'lax' | 'strict'
+            });
+        } catch (err) {
+            // Ignore cookie copy errors
+        }
+    }
 }

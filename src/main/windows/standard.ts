@@ -10,9 +10,10 @@
  */
 
 import { BrowserWindow, session, shell, ipcMain, app } from 'electron';
-import { setupAuthInterception } from '../auth.js';
+import { setupAuthInterception, copyAuthCookies } from '../auth.js';
 import { getHUDWindow } from './hud.js';
 import { getSetting, setWindowBounds, getWindowBounds } from '../store.js';
+import { createSignInWindow } from './auth-window.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -24,7 +25,6 @@ const GEMINI_URL = 'https://gemini.google.com';
 
 // Session partitions
 const SESSION_PARTITION = 'persist:gemini';
-const SIGNIN_PARTITION = 'persist:gemini-auth';
 
 // Window reference
 let standardWindow: BrowserWindow | null = null;
@@ -48,84 +48,6 @@ async function checkSignedIn(): Promise<boolean> {
         c.name === 'SID' || c.name === 'SSID' || c.name === '__Secure-1PSID'
     );
     return authCookies.length > 0;
-}
-
-/**
- * Copy cookies from sign-in session to main session
- */
-async function copyAuthCookies(): Promise<void> {
-    const signInSession = session.fromPartition(SIGNIN_PARTITION);
-    const mainSession = session.fromPartition(SESSION_PARTITION);
-
-    const cookies = await signInSession.cookies.get({ domain: '.google.com' });
-    console.log(`[Auth] Copying ${cookies.length} cookies`);
-
-    for (const cookie of cookies) {
-        try {
-            await mainSession.cookies.set({
-                url: `https://${cookie.domain?.replace(/^\./, '') || 'google.com'}${cookie.path || '/'}`,
-                name: cookie.name,
-                value: cookie.value,
-                domain: cookie.domain,
-                path: cookie.path,
-                secure: cookie.secure,
-                httpOnly: cookie.httpOnly,
-                expirationDate: cookie.expirationDate,
-                sameSite: cookie.sameSite as 'unspecified' | 'no_restriction' | 'lax' | 'strict'
-            });
-        } catch (err) {
-            // Ignore cookie copy errors
-        }
-    }
-}
-
-/**
- * Create sign-in window (clean session, no spoofing)
- */
-function createSignInWindow(url: string): BrowserWindow {
-    const win = new BrowserWindow({
-        width: 500,
-        height: 700,
-        title: 'Sign in to Google',
-        frame: true,
-        webPreferences: {
-            partition: SIGNIN_PARTITION,
-            contextIsolation: true,
-            nodeIntegration: false,
-            sandbox: true
-        }
-    });
-
-    win.webContents.on('did-navigate', async (_e, navUrl) => {
-        if (navUrl.includes('gemini.google.com') && !navUrl.includes('accounts.google.com')) {
-            const isSignedIn = await checkSignedIn();
-            if (isSignedIn || true) { // Copy cookies regardless
-                await copyAuthCookies();
-                win.close();
-
-                // Reload Standard Window
-                if (standardWindow && !standardWindow.isDestroyed()) {
-                    standardWindow.loadURL(GEMINI_URL);
-                    standardWindow.show();
-                    standardWindow.focus();
-                }
-
-                // Also reload HUD so it gets the auth cookies
-                const hudWindow = getHUDWindow();
-                if (hudWindow && !hudWindow.isDestroyed()) {
-                    console.log('[Auth] Reloading HUD with new auth cookies');
-                    hudWindow.loadURL(GEMINI_URL);
-                }
-            }
-        }
-    });
-
-    win.on('closed', () => {
-        signInWindow = null;
-    });
-
-    win.loadURL(url);
-    return win;
 }
 
 export function createStandardWindow(): BrowserWindow {
@@ -158,31 +80,57 @@ export function createStandardWindow(): BrowserWindow {
     win.webContents.on('will-navigate', (event, url) => {
         if (url.includes('accounts.google.com')) {
             event.preventDefault();
-            if (!signInWindow || signInWindow.isDestroyed()) {
-                signInWindow = createSignInWindow(url);
-            } else {
-                signInWindow.loadURL(url);
-            }
-            signInWindow.show();
-            signInWindow.focus();
+            handleSignIn(url);
         }
     });
 
     // Intercept popup windows
     win.webContents.setWindowOpenHandler(({ url }) => {
         if (url.includes('accounts.google.com')) {
-            if (!signInWindow || signInWindow.isDestroyed()) {
-                signInWindow = createSignInWindow(url);
-            } else {
-                signInWindow.loadURL(url);
-            }
-            signInWindow.show();
-            signInWindow.focus();
+            handleSignIn(url);
             return { action: 'deny' };
         }
         shell.openExternal(url);
         return { action: 'deny' };
     });
+
+    // Handle sign-in flow
+    function handleSignIn(url: string) {
+        if (signInWindow && !signInWindow.isDestroyed()) {
+            signInWindow.loadURL(url);
+            signInWindow.show();
+            signInWindow.focus();
+            return;
+        }
+
+        signInWindow = createSignInWindow(url, win); // Pass parent for modal
+
+        signInWindow.webContents.on('did-navigate', async (_e, navUrl) => {
+            if (navUrl.includes('gemini.google.com') && !navUrl.includes('accounts.google.com')) {
+                // Copy cookies and close
+                await copyAuthCookies();
+                signInWindow?.close();
+
+                // Reload Standard Window
+                if (standardWindow && !standardWindow.isDestroyed()) {
+                    standardWindow.loadURL(GEMINI_URL);
+                    standardWindow.show();
+                    standardWindow.focus();
+                }
+
+                // Also reload HUD so it gets the auth cookies
+                const hudWindow = getHUDWindow();
+                if (hudWindow && !hudWindow.isDestroyed()) {
+                    console.log('[Auth] Reloading HUD after auth');
+                    hudWindow.loadURL(GEMINI_URL);
+                }
+            }
+        });
+
+        signInWindow.on('closed', () => {
+            signInWindow = null;
+        });
+    }
 
     // Load Gemini
     win.loadURL(GEMINI_URL);
