@@ -4,7 +4,8 @@
  */
 
 import { app, BrowserWindow, ipcMain } from 'electron';
-import { autoUpdater } from 'electron-updater';
+import electronUpdater from 'electron-updater';
+const { autoUpdater } = electronUpdater;
 import { createStandardWindow, getStandardWindow, showStandardWindow } from './windows/standard.js';
 import { createHUDWindow, hideHUDWindow } from './windows/hud.js';
 import { registerSettingsIPC, applyLaunchOnStartup } from './windows/settings.js';
