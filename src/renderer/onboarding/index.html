@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+    <title>Welcome - Gemini Desktop</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+    <div class="onboarding-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Welcome to Gemini For Desktop!</h1>
+            <p class="subtitle">Access Gemini anytime, with a global customizable hotkey</p>
+        </div>
+
+        <!-- Features -->
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">🖥️</div>
+                <div class="feature-content">
+                    <h3>Explore ways to use Gemini For Desktop</h3>
+                    <p><strong>Main Window</strong> for full chat experience</p>
+                    <p><strong>Floating Window</strong> for quick chats (bound to shortcut)</p>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⌨️</div>
+                <div class="feature-content">
+                    <h3>Global Hotkey</h3>
+                    <p>Press <span class="hotkey-display" id="hotkeyText"></span> anywhere to toggle the floating window
+                    </p>
+                    <button class="btn btn-customize" id="customizeHotkeyBtn">Customize</button>
+                </div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📌</div>
+                <div class="feature-content">
+                    <h3>System Tray</h3>
+                    <p>By default, Gemini minimizes to the system tray. Right-click the tray icon for more</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+            <button class="btn btn-secondary" id="dontShowAgainBtn">Don't show again</button>
+            <button class="btn btn-primary" id="dismissBtn">Got it!</button>
+        </div>
+    </div>
+
+    <script type="module" src="./script.ts"></script>
+</body>
+
+</html>

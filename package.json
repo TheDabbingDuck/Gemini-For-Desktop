@@ -1,0 +1,32 @@
+{
+  "name": "gemini-desktop",
+  "version": "1.0.0",
+  "description": "Desktop application for Google Gemini with floating HUD and system tray integration",
+  "type": "module",
+  "main": "dist/main/index.js",
+  "author": "Gemini Desktop User",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "package:win": "npm run build && electron-builder --win",
+    "package:mac": "npm run build && electron-builder --mac --arm64",
+    "package:mac-intel": "npm run build && electron-builder --mac --x64"
+  },
+  "dependencies": {
+    "electron-store": "^11.0.2",
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12",
+    "electron-vite": "^5.0.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.3.0"
+  }
+}

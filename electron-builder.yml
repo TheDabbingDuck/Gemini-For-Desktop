@@ -1,0 +1,41 @@
+appId: com.gemini.desktop
+productName: Gemini Desktop
+directories:
+  output: release
+publish:
+  provider: github
+  owner: TheDabbingDuck 
+  repo: Gemini-For-Desktop
+files:
+  - dist/**/*
+  - resources/**/*
+
+win:
+  target:
+    - nsis
+  icon: resources/icon.ico
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: resources/icon.icns
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+  category: public.app-category.productivity
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
