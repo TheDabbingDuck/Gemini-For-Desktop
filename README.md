@@ -15,13 +15,11 @@ Gemini for Desktop wraps the full [gemini.google.com](https://gemini.google.com)
 ## 📥 Installation (Windows)
 
 1.  **Download** the latest `.exe` from the [Releases page](../../releases/latest).
-2.  **Run the installer.**
+2.  **Run the installer. (See warning below)**
 
-### ⚠️ "Windows Protected Your PC" Warning
+### ⚠️⚠️⚠️ "Windows Protected Your PC" Warning ⚠️⚠️⚠️
 
 Since this app isn't signed with an expensive Microsoft certificate, Windows SmartScreen will show a scary blue warning. Don't worry, it's safe (and open source, so you can check it yourself).
-
-**Here's how to get past it:**
 
 1.  Click **"More info"** (it's a small link, easy to miss).
 2.  Click **"Run anyway"**.
@@ -37,7 +35,7 @@ I don't have a Mac to build on right now. If you'd like to contribute, check out
 
 ---
 
-## 🎮 How to Use
+## How to Use
 
 1.  **Launch** the app. Sign in with your Google account (follow instructions in the browser that opens).
 2.  **Press `Ctrl+Shift+G`** to summon the floating HUD from anywhere.
@@ -63,7 +61,7 @@ Code signing certificates cost hundreds of dollars a year. This is a free projec
 
 ---
 
-## 🛠️ For Developers
+## For Developers
 
 Want to contribute or run it yourself?
 
