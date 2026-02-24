@@ -15,6 +15,7 @@ import { setupAuthInterception, setupAuthErrorDetection, copyAuthCookies } from 
 import { setWindowBounds, getWindowBounds } from '../store.js';
 import { showStandardWindow } from './standard.js';
 import { createSignInWindow } from './auth-window.js';
+import { setupContextMenu } from '../context-menu.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -231,6 +232,9 @@ export function createHUDWindow(): BrowserWindow {
 
     // Load Gemini (only once - never reload)
     win.loadURL(GEMINI_URL);
+
+    // Enable right-click context menu with spellcheck
+    setupContextMenu(win);
 
     hudWindow = win;
     return win;
