@@ -14,6 +14,7 @@ import { setupAuthInterception, copyAuthCookies } from '../auth.js';
 import { getHUDWindow } from './hud.js';
 import { getSetting, setWindowBounds, getWindowBounds } from '../store.js';
 import { createSignInWindow } from './auth-window.js';
+import { setupContextMenu } from '../context-menu.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -134,6 +135,9 @@ export function createStandardWindow(): BrowserWindow {
 
     // Load Gemini
     win.loadURL(GEMINI_URL);
+
+    // Enable right-click context menu with spellcheck
+    setupContextMenu(win);
 
     win.once('ready-to-show', () => {
         // Check if launched as hidden (startup item)

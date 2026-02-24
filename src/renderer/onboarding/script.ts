@@ -10,7 +10,7 @@ const hotkeyText = document.getElementById('hotkeyText') as HTMLSpanElement;
 /**
  * Format accelerator for display (make it more readable with kbd tags)
  */
-function formatHotkeyDisplay(accelerator: string): string {
+function formatHotkeyHTML(accelerator: string): string {
     const formatted = accelerator
         .replace('CommandOrControl', navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl');
     // Split into parts and wrap each in kbd
@@ -22,7 +22,7 @@ function formatHotkeyDisplay(accelerator: string): string {
  */
 async function loadHotkey(): Promise<void> {
     const hotkey = await window.onboardingAPI.getHotkey();
-    hotkeyText.innerHTML = formatHotkeyDisplay(hotkey);
+    hotkeyText.innerHTML = formatHotkeyHTML(hotkey);
 }
 
 // Event listeners
