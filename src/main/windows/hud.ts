@@ -82,6 +82,7 @@ export function createHUDWindow(): BrowserWindow {
         frame: false,
         transparent: false,
         alwaysOnTop: true,
+        backgroundColor: '#1e1f20',
         skipTaskbar: true,
         resizable: true,
         maximizable: false,      // Prevent "snapping" to full screen
@@ -206,7 +207,7 @@ export function createHUDWindow(): BrowserWindow {
         /* Rounded corners container */
         /* Raw window styling - no border */
         html, body {
-          background: transparent !important;
+          background: #1e1f20 !important;
           margin: 0 !important;
           padding: 0 !important;
           width: 100vw !important;

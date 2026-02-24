@@ -67,6 +67,7 @@ export function createStandardWindow(): BrowserWindow {
         minHeight: 400,
         show: false,
         frame: true,
+        backgroundColor: '#1e1f20',
         autoHideMenuBar: true, // Hide menu bar, Alt key to show
         skipTaskbar: false, // Ensure window appears in taskbar
         icon: path.join(__dirname, process.platform === 'win32' ? '../../resources/icon.ico' : '../../resources/icon.icns'), // Cross-platform icon

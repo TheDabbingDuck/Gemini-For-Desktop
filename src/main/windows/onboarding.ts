@@ -40,7 +40,8 @@ export function showOnboardingWindow(): void {
         minimizable: false,
         maximizable: false,
         frame: false,
-        transparent: true,
+        transparent: false,
+        backgroundColor: '#1e1f20',
         alwaysOnTop: true,
         skipTaskbar: true,
         icon: path.join(__dirname, process.platform === 'win32' ? '../../resources/icon.ico' : '../../resources/icon.icns'), // Cross-platform icon
