@@ -26,7 +26,16 @@ async function init(): Promise<void> {
 
     // Check for updates (only in packaged app)
     if (app.isPackaged) {
-        autoUpdater.checkForUpdatesAndNotify();
+        autoUpdater.logger = null; // We handle logging ourselves
+        autoUpdater.on('checking-for-update', () => console.log('[Updater] Checking for updates...'));
+        autoUpdater.on('update-available', (info) => console.log(`[Updater] Update available: v${info.version}`));
+        autoUpdater.on('update-not-available', () => console.log('[Updater] App is up to date'));
+        autoUpdater.on('download-progress', (prog) => console.log(`[Updater] Downloading: ${Math.round(prog.percent)}%`));
+        autoUpdater.on('update-downloaded', (info) => console.log(`[Updater] Update downloaded: v${info.version} — will install on restart`));
+        autoUpdater.on('error', (err) => console.error('[Updater] Error:', err.message));
+        autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+            console.error('[Updater] Failed to check for updates:', err.message);
+        });
     }
 
     // Register IPC handlers first

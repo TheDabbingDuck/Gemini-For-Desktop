@@ -30,6 +30,7 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
+  artifactName: "${name}-Setup-${version}.${ext}"
 
 dmg:
   contents:
