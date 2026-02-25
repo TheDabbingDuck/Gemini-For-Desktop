@@ -22,7 +22,7 @@ mac:
         - x64
         - arm64
   icon: resources/icon.icns
-  artifactName: "${productName}-${version}-${arch}.${ext}"
+  artifactName: "${name}-${version}-${arch}.${ext}"
   category: public.app-category.productivity
 
 nsis:

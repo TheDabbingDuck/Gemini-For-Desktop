@@ -32,11 +32,13 @@ function createPlaceholderIcon(): Electron.NativeImage {
     // Try to load icon from resources first
     const iconPath = path.join(__dirname, '../../resources/tray-icon.png');
     try {
-        const icon = nativeImage.createFromPath(iconPath);
+        let icon = nativeImage.createFromPath(iconPath);
         if (!icon.isEmpty()) {
             console.log('[Tray] Loaded icon from resources');
-            // On macOS, treat as template image (handles dark/light mode automatically)
             if (process.platform === 'darwin') {
+                // macOS menu bar icons must be 16x16 (or 22x22 max)
+                // Resize to prevent stretching in the menu bar
+                icon = icon.resize({ width: 16, height: 16 });
                 icon.setTemplateImage(true);
             }
             return icon;

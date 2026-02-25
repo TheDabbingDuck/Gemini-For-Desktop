@@ -15,6 +15,8 @@ const hotkeyDisplay = document.getElementById('hotkeyDisplay') as HTMLSpanElemen
 const recordHotkeyBtn = document.getElementById('recordHotkeyBtn') as HTMLButtonElement;
 const hotkeyRecording = document.getElementById('hotkeyRecording') as HTMLDivElement;
 const cancelRecordBtn = document.getElementById('cancelRecordBtn') as HTMLButtonElement;
+const recordingPrompt = document.getElementById('recordingPrompt') as HTMLSpanElement;
+const macHint = document.getElementById('macHint') as HTMLParagraphElement;
 
 // Hotkey recording state
 let isRecording = false;
@@ -83,6 +85,15 @@ function startRecording(): void {
     isRecording = true;
     recordHotkeyBtn.parentElement!.style.display = 'none';
     hotkeyRecording.style.display = 'flex';
+
+    // Show platform-specific prompt
+    const isMac = navigator.platform.includes('Mac');
+    if (isMac) {
+        recordingPrompt.textContent = 'Press Ctrl + your key combo (Ctrl maps to ⌘ Cmd)...';
+    } else {
+        recordingPrompt.textContent = 'Press your new hotkey combination...';
+    }
+
     document.addEventListener('keydown', handleKeyDown);
 }
 
@@ -177,3 +188,8 @@ cancelRecordBtn.addEventListener('click', stopRecording);
 
 // Load settings on page load
 loadSettings();
+
+// Show macOS-specific hint
+if (navigator.platform.includes('Mac')) {
+    macHint.style.display = 'block';
+}
